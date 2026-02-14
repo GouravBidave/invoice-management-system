@@ -19,6 +19,8 @@ def get_invoice(request, id):
     return Response(serializer.data)
 
 
+from decimal import Decimal, InvalidOperation
+
 @api_view(['POST'])
 def add_payment(request, id):
     try:
@@ -28,13 +30,20 @@ def add_payment(request, id):
 
     amount = request.data.get("amount")
 
+    if amount is None:
+        return Response({"error": "Amount is required"}, status=400)
+
+    try:
+        amount = Decimal(amount)
+    except InvalidOperation:
+        return Response({"error": "Invalid amount format"}, status=400)
+
     try:
         Payment.objects.create(invoice=invoice, amount=amount)
     except Exception as e:
         return Response({"error": str(e)}, status=400)
 
     return Response({"message": "Payment added successfully"})
-
 
 @api_view(['POST'])
 def archive_invoice(request):
@@ -64,3 +73,10 @@ def restore_invoice(request):
     invoice.save()
 
     return Response({"message": "Invoice restored"})
+
+
+
+    from django.shortcuts import render
+
+def invoice_detail_page(request, id):
+    return render(request, "invoices/invoice_detail.html", {"invoice_id": id})
